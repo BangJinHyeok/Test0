@@ -1,0 +1,41 @@
+ch07.xml.search : FactoryBean 을 이용한 방법
+0. MainForSearch
+	-GenericXmlApplicationContext ctx = new GenericXmlApplicationContext("classpath:ch07/xml/search/config-erp.xml"); 실행
+	-SearchClientFactory factory = ctx.getBean("searchClientFactory", SearchClientFactory.class); //getBean을 쓰면 해당 클래스를 로딩한다.
+		-그러나 SearchClientFactoryBean에서 FactoryBean<SearchClientFactory>를 상속받으면 getObject() 를 실행한다.
+		-SearchClientFactory 이곳에 HttpSearchClientFactory 주소가 리턴되면서 메인의 SearchClientFactory 주소가 클래스 주소가 아닌 HttpSearchClientFactory가 된다.
+		
+1. config-erp.xml
+	-SearchClientFactoryBean 에
+		-setServer(String server) -> parameter : 10.20.30.40
+		-setPort(int port) -> parameter : 8888
+		-setContentType(String contentType) -> parameter : json
+	
+2. SearchClientFactoryBean
+	-setEncoding(String encoding) -> parameter : utf8
+	-implements FactoryBean<SearchClientFactory> 상속
+
+
+	@Override
+	-SearchClientFactory getObject() : 구현한 클래스를 반환해주는 메소드
+	-SearchClientFactoryBuilder builder = new SearchClientFactoryBuilder();
+	-builder.server(server).port(port).contentType(contentType == null ? "json" : contentType).encoding(encoding); 해당 빌더 주소에 값들을 저장
+	-builder.build(); 로 가면 new HttpSearchClientFactory(host + ":" + port, contentType, encoding); 새로운 주소를 만든다.
+		-HttpSearchClientFactory 에 값들이 저장되고
+			-searchClientFactory.init();를 실행 (출력)
+	-searchClientFactory 주소를 this.searchClientFactory로 값을 넣고
+	-return this.searchClientFactory; 됨으로
+	-SearchClientFactory에 HttpSearchClientFactory 주소가 리턴된다.
+	-그러므로 메인에 SearchClientFactory 부른게 HttpSearchClientFactory가 된다.
+	
+3. @Override
+	public Class<?> getObjectType() {
+		//getObject()에서 리턴되는 객체의 타입을 명시
+		return SearchClientFactory.class;
+	}
+	public boolean isSingleton() {
+		//isSingletone 메소드는 생성되는 객체를 싱글톤(한개의 객체)로만 설정할 것인가를 정하는설정 메소드입니다. true면 주소값을 계속 재사용하며 false면 매번 재생성
+		return true;
+	}
+			
+	
